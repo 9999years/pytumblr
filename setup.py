@@ -91,13 +91,13 @@ class UploadCommand(Command):
 
 setup(
     name="PyTumblr",
-    version="0.0.8",
+    version="1.0.0",
     description="A Python API v2 wrapper for Tumblr",
     long_description=long_description,
     author="Tumblr",
     author_email="accounts@tumblr.com",
     url="https://github.com/tumblr/pytumblr",
-    download_url="https://github.com/tumblr/pytumblr/archive/0.0.8.tar.gz",
+    download_url="https://github.com/tumblr/pytumblr/archive/0.1.0.tar.gz",
     packages=['pytumblr'],
     license="Apache Software License 2.0",
     zip_safe=False,
@@ -107,24 +107,17 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
 
     test_suite='nose.collector',
 
     install_requires=[
-        'future',
         'requests-oauthlib',
     ],
 
     tests_require=[
+        'tox',
         'nose',
         'nose-cov',
         'mock'

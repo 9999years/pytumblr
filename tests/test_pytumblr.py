@@ -1,16 +1,10 @@
-from __future__ import unicode_literals
-from future import standard_library
-standard_library.install_aliases()
-import unittest
-import mock
 import json
-import pytumblr
+import unittest
 from urllib.parse import parse_qs
-import sys
-if sys.version_info < (2, 7):
-    # python 2.6 may show ssl warnings, which we don't care about for these tests
-    import urllib3
-    urllib3.disable_warnings()
+
+import mock
+
+import pytumblr
 
 
 def wrap_response(response_text):
