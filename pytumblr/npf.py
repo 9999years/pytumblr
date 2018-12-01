@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Type
 
 from . import types
 
@@ -49,6 +49,12 @@ class ContentFormat(NeueObject):
     start: int
     end: int
 
+    def __new__(cls, *args, **kwargs):
+        if 'type' in kwargs:
+            return FORMAT_CLASSES[kwargs['type']](*args, **kwargs)
+        else:
+            return ContentFormat(*args, **kwargs)
+
 
 @dataclass
 class LinkFormat(ContentFormat):
@@ -59,14 +65,29 @@ class LinkFormat(ContentFormat):
 class MentionFormat(ContentFormat):
     blog: ShortBlogInfo
 
+    def __post_init__(self):
+        self.blog = ShortBlogInfo(**self.blog)
+
 
 @dataclass
 class ColorFormat(ContentFormat):
     hex: str
 
 
+FORMAT_CLASSES = {
+    'color': ColorFormat,
+    'link': LinkFormat,
+    'content': ContentFormat,
+}
+
+
 class ContentBlock(NeueObject):
-    pass
+    def __new__(cls, *args, **kwargs):
+        if kwargs['type'] in CONTENT_CLASSES:
+            return CONTENT_CLASSES[kwargs['type']](*args, **kwargs)
+        else:
+            # type is a generic mime type
+            return ImageBlock(*args, **kwargs)
 
 
 @dataclass
@@ -84,7 +105,8 @@ class Media(NeueObject):
 
 
 class Attribution(NeueObject):
-    pass
+    def __new__(cls, *args, **kwargs):
+        return ATTRIBUTION_CLASSES[kwargs['type']](*args, **kwargs)
 
 
 @dataclass
@@ -93,10 +115,17 @@ class PostAttribution(Attribution):
     post: PostInfo
     blog: ShortBlogInfo
 
+    def __post_init__(self):
+        self.post = PostInfo(**self.post)
+        self.blog = ShortBlogInfo(**self.blog)
+
 
 @dataclass
 class BlogAttribution(Attribution):
     blog: ShortBlogInfo
+
+    def __post_init__(self):
+        self.blog = ShortBlogInfo(**self.blog)
 
 
 @dataclass
@@ -111,6 +140,17 @@ class AppAttribution(Attribution):
     display_text: str = None
     logo: Media = None
 
+    def __post_init__(self):
+        self.logo = Media(**self.logo)
+
+
+ATTRIBUTION_CLASSES: Dict[str, Type] = {
+    'link': LinkAttribution,
+    'blog': BlogAttribution,
+    'app': AppAttribution,
+    'post': PostAttribution,
+}
+
 
 @dataclass
 class ImageBlock(ContentBlock):
@@ -119,6 +159,11 @@ class ImageBlock(ContentBlock):
     feedback_token: str = ''
     poster: Media = None
     attribution: Attribution = None
+
+    def __post_init__(self):
+        self.media = [Media(**item) for item in self.media]
+        self.poster = Media(**self.poster)
+        self.attribution = Attribution(self.attribution)
 
 
 @dataclass
@@ -130,6 +175,9 @@ class LinkBlock(ContentBlock):
     site_name: str = None
     display_url: str = None
     poster: Media = None
+
+    def __post_init__(self):
+        self.poster = Media(**self.poster)
 
 
 @dataclass
@@ -146,6 +194,11 @@ class MediaBlock(ContentBlock):
     metadata: Dict[str, Any] = None
     attribution: Attribution = None
 
+    def __post_init__(self):
+        self.poster = [Media(**poster) for poster in self.poster]
+        self.media = Media(**self.media)
+        self.attribution = Attribution(**self.attribution)
+
 
 @dataclass
 class AudioBlock(MediaBlock):
@@ -159,8 +212,18 @@ class VideoBlock(MediaBlock):
     can_autoplay_on_cellular: bool = None
 
 
+CONTENT_CLASSES = {
+    'video': VideoBlock,
+    'audio': AudioBlock,
+    'media': MediaBlock,
+    'text': TextBlock,
+    'link': LinkBlock,
+}
+
+
 class LayoutBlock(NeueObject):
-    pass
+    def __new__(cls, *args, **kwargs):
+        return LAYOUT_CLASSES[kwargs['type']](*args, **kwargs)
 
 
 IndexList = List[int]
@@ -170,6 +233,9 @@ IndexList = List[int]
 class Display:
     blocks: IndexList
     mode: NeueObject
+
+    def __post_init__(self):
+        self.mode = NeueObject(**self.mode)
 
 
 @dataclass
@@ -191,11 +257,25 @@ class AskLayout(LayoutBlock):
     attribution: Attribution
     blog: ShortBlogInfo = None
 
+    def __post_init__(self):
+        self.attribution = Attribution(**self.attribution)
+        self.blog = ShortBlogInfo(**self.blog)
+
+
+LAYOUT_CLASSES: Dict[str, Type] = {
+    'rows': RowsLayout,
+    'condensed': CondensedLayout,
+    'ask': AskLayout,
+}
+
 
 @dataclass
 class BrokenBlog:
     name: str
     avatar: types.Avatar
+
+    def __post_init__(self):
+        self.avatar = types.Avatar(**self.avatar)
 
 
 @dataclass
@@ -206,6 +286,14 @@ class Trail:
     broken_blog: BrokenBlog
     post: PostInfo = None
     blog: ShortBlogInfo = None
+
+    def __post_init__(self):
+        self.content = [ContentBlock(**block) for block in self.content]
+        self.layout = [LayoutBlock(**block) for block in self.layout]
+
+        self.broken_blog = BrokenBlog(**self.broken_blog)
+        self.post = PostInfo(**self.post)
+        self.blog = ShortBlogInfo(**self.blog)
 
 
 @dataclass
@@ -224,3 +312,8 @@ class NeuePost(NeuePostInfo):
     reblog_key: str = None
 
     trail: List[Trail] = None
+
+    def __post_init__(self):
+        self.content = [ContentBlock(**block) for block in self.content]
+        self.layout = [LayoutBlock(**block) for block in self.layout]
+        self.trail = [Trail(**item) for item in self.trail]
